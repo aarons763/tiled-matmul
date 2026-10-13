@@ -30,3 +30,15 @@
 - Added ignore rules for simulation outputs, Python caches, and waveforms.
 - This directed smoke test establishes basic tool integration; it is not accelerator verification.
 - Next: document reproducible setup and simulation instructions.
+
+## 2026-10-13 — Fresh-checkout reproduction
+
+- Cloned GitHub into `/home/aarons763/projects/tiled-matmul-setup-check`.
+- Created a separate virtual environment using Ubuntu's `/usr/bin/python3`.
+- Installed dependencies from `requirements.txt` and ran `make -C tests`.
+- Icarus compiled the RTL from scratch; the test passed at 25 ns (1 passed, 0 failed).
+- `git status --short` was empty afterward, confirming generated files were ignored.
+- This check reused installed Ubuntu tools; it was not a clean-machine reproduction.
+- Returned to the original checkout and activated its original `.venv`.
+- Prepared a mentor handoff and initial decision log for continuing in a new chat.
+- Aaron explicitly deferred the repository license decision; no LICENSE file was added. Accelerator architecture is not yet specified.

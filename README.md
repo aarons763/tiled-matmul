@@ -95,4 +95,4 @@ The `.venv` directory is also excluded.
 
 The passing smoke test establishes basic simulator/testbench integration.
 There are no accelerator performance, synthesis, timing, area, or power
-results yet. A fresh-clone reproduction has not yet been checked.
+results yet. A fresh GitHub checkout with a newly created Python virtual environment passed the smoke test at 25 ns. This check reused the installed Ubuntu system tools; it was not a clean-machine test.
