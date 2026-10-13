@@ -15,3 +15,18 @@
 - Pushed commit `7ffdb8e` to `aarons763/tiled-matmul`; local `main` now tracks `origin/main`.
 - Tool version checks passed, but no RTL simulation or cocotb integration test has run yet.
 - Next milestone: establish and verify a minimal simulation smoke test.
+
+## 2026-10-13 — Register simulation smoke test
+
+- Implemented an 8-bit register with active-high synchronous reset.
+- Compiled the RTL with Icarus using SystemVerilog 2012 support without diagnostics.
+- Installed Verible v0.0-4296-g0f262651 and configured formatting in VS Code’s WSL settings.
+- Connected the RTL and cocotb test using tests/Makefile.
+- Ran the simulation from the project root using `make -C tests`.
+- Verified initial reset at 5 ns and data capture at 15 ns.
+- Verified that asserting reset and changing data at 20 ns leaves the output unchanged.
+- Verified reset clears the output at 25 ns, taking priority over nonzero input data.
+- Result: 1 test passed, 0 failed; simulation duration was 25 ns.
+- Added ignore rules for simulation outputs, Python caches, and waveforms.
+- This directed smoke test establishes basic tool integration; it is not accelerator verification.
+- Next: document reproducible setup and simulation instructions.

@@ -1,1 +1,12 @@
 .venv/
+# Simulation build outputs and test results
+sim_build/
+results.xml
+
+# Python bytecode caches
+__pycache__/
+*.pyc
+
+# Generated waveforms
+*.vcd
+*.fst
