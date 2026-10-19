@@ -222,3 +222,55 @@
   write/completion priority, and reset during loading.
 - The external host supplies matrices and stores results. No system-memory
   transport, software driver, synthesis results, or double buffering is included.
+
+## 2026-10-19 — Expanded host verification
+
+
+The host test now runs seven workloads per configuration with reproducible
+seed 763 for signed operands, loading gaps, compute stalls, and result
+backpressure. Cases cover all -128 operands, mixed -128/127 operands, zero
+products, rectangular outputs, and K at DEPTH-1 (clamped to 1), DEPTH,
+DEPTH+1, 2*DEPTH, and 2*DEPTH+1, plus the original K=35 workload.
+Each result is checked against the independent mathematical reference.
+
+| Array | Bank depth | Result | Simulation time |
+|---|---:|---|---:|
+| 4x4 | 16 | PASS | 69585 ns |
+| 2x3 | 16 | PASS | 55535 ns |
+| 2x3 | 1 | PASS | 52795 ns |
+| 2x3 | 3 | PASS | 40875 ns |
+
+Run the additional depth configurations with:
+
+```bash
+make -C tests -f Makefile.host ROWS=2 COLS=3 DEPTH=1
+make -C tests -f Makefile.host ROWS=2 COLS=3 DEPTH=3
+```
+
+A 1x1 array with DEPTH=1 was attempted but Icarus 12.0 aborted during
+elaboration at tile_engine.sv:52 with an internal unpacked-dimension
+assertion. No simulation ran for that configuration; it remains unverified.
+Depth-one storage passed separately on the 2x3 array.
+
+These times describe testbench simulation duration, not accelerator
+throughput. Reset during computation and result streaming, additional
+seeds, synthesis, and timing remain follow-up work.
+
+## 2026-10-19 — Reset abort and recovery
+
+A second host test resets during computation after the first MAC edge and
+during result output after accepting one element. Reset is asserted with
+step low and command/write/completion/result handshake inputs high to check
+reset priority. Each abort is followed by idle checks for stale completion
+or output, then a complete operation with different operands to detect stale
+accumulation. This is directed coverage, not every possible reset edge.
+
+Both host tests pass in all four configurations:
+- 4x4, depth 16: 70970 ns total (1385 ns reset/recovery test).
+- 2x3, depth 16: 56510 ns total (975 ns reset/recovery test).
+- 2x3, depth 1: 53770 ns total (975 ns reset/recovery test).
+- 2x3, depth 3: 41850 ns total (975 ns reset/recovery test).
+
+No RTL changes were required. The 1x1 Icarus elaboration limitation remains.
+Next work is synthesis/lint preparation and baseline cycle measurements,
+followed by double buffering and comparison on identical workloads.

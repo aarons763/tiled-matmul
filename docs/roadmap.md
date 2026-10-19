@@ -2,12 +2,17 @@
 
 ## Current milestone
 
-Setup and fresh-checkout smoke testing are complete. Matrix multiplication,
-dot products, and basic array scheduling have been introduced. A reusable
-PE has passed its first directed test while the wider accelerator
-specification and independent mathematical reference remain open.
-Complete PE verification and resolve the remaining specification decisions
-before advancing to array integration.
+The single-buffer compute core and serialized host interface are implemented.
+Full-matrix reference checks pass for 4x4 and 2x3 arrays, including signed
+boundary values, partial tiles, multiple K chunks, and reproducible stalls.
+Depths 1, 3, and 16 pass on the 2x3 array. The 1x1 array configuration
+remains unverified because Icarus aborts during elaboration.
+
+Directed reset-abort and recovery tests now pass during computation and
+result streaming on all four verified configurations. Additional verification
+remains possible; the next milestone is lint/synthesis checks and measurement
+of the single-buffer baseline before adding double buffering. See
+[host verification results](host-interface.md#expanded-host-regression).
 
 ## Planned stages
 

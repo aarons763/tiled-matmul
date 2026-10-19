@@ -242,3 +242,7 @@ make -C tests -f Makefile.host ROWS=2 COLS=3
 Both directed tests pass: 17055 ns for 4x4 and 17735 ns for 2x3.
 See [the host interface contract](docs/host-interface.md) for commands,
 operand writes, loading completion, result streaming, and reset behavior.
+
+The expanded seven-workload host regression also passes with 2x3 arrays
+and bank depths 1 and 3. See [expanded verification results](docs/host-interface.md#expanded-host-regression)
+for current coverage, simulation times, and the Icarus 1x1 build limitation.
