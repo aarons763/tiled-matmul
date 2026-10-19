@@ -1,0 +1,12 @@
+SIM = icarus
+TOPLEVEL_LANG = verilog
+ROWS ?= 4
+COLS ?= 4
+VERILOG_SOURCES = ../rtl/operand_bank.sv ../rtl/operand_buffer.sv ../rtl/pe.sv ../rtl/systolic_array.sv ../rtl/buffered_array.sv ../rtl/read_scheduler.sv ../rtl/tile_engine.sv
+COCOTB_TOPLEVEL = tile_engine
+COCOTB_TEST_MODULES = test_tile_engine
+SIM_BUILD = sim_build/tile_engine_$(ROWS)x$(COLS)
+COMPILE_ARGS += -Ptile_engine.ROWS=$(ROWS) -Ptile_engine.COLS=$(COLS) -Ptile_engine.DEPTH=16
+COCOTB_HDL_TIMEUNIT = 1ns
+COCOTB_HDL_TIMEPRECISION = 1ps
+include $(shell cocotb-config --makefiles)/Makefile.sim

@@ -1,0 +1,10 @@
+SIM = icarus
+TOPLEVEL_LANG = verilog
+VERILOG_SOURCES = ../rtl/pe.sv ../rtl/systolic_array.sv
+COCOTB_TOPLEVEL = systolic_array
+COCOTB_TEST_MODULES = test_systolic_array
+SIM_BUILD = sim_build/array_2x2
+COMPILE_ARGS += -Psystolic_array.ROWS=2 -Psystolic_array.COLS=2
+COCOTB_HDL_TIMEUNIT = 1ns
+COCOTB_HDL_TIMEPRECISION = 1ps
+include $(shell cocotb-config --makefiles)/Makefile.sim

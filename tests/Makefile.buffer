@@ -1,0 +1,10 @@
+SIM = icarus
+TOPLEVEL_LANG = verilog
+VERILOG_SOURCES = ../rtl/operand_bank.sv ../rtl/operand_buffer.sv
+COCOTB_TOPLEVEL = operand_buffer
+COCOTB_TEST_MODULES = test_operand_buffer
+SIM_BUILD = sim_build/operand_buffer_4x4
+COMPILE_ARGS += -Poperand_buffer.ROWS=4 -Poperand_buffer.COLS=4 -Poperand_buffer.DEPTH=16
+COCOTB_HDL_TIMEUNIT = 1ns
+COCOTB_HDL_TIMEPRECISION = 1ps
+include $(shell cocotb-config --makefiles)/Makefile.sim

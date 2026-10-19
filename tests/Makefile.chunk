@@ -1,0 +1,10 @@
+SIM = icarus
+TOPLEVEL_LANG = verilog
+VERILOG_SOURCES = ../rtl/chunk_controller.sv
+COCOTB_TOPLEVEL = chunk_controller
+COCOTB_TEST_MODULES = test_chunk_controller
+SIM_BUILD = sim_build/chunk_controller_16
+COMPILE_ARGS += -Pchunk_controller.DEPTH=16
+COCOTB_HDL_TIMEUNIT = 1ns
+COCOTB_HDL_TIMEPRECISION = 1ps
+include $(shell cocotb-config --makefiles)/Makefile.sim

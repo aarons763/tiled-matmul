@@ -22,11 +22,11 @@ and explicit 1 ns / 1 ps simulation defaults. This combination passed the
 register smoke test. Future RTL constructs must be checked for simulator
 support; passing this test does not establish full SystemVerilog support.
 
-### D004 — Keep development evidence in the user's own repository
+### D004 — Track development evidence in version control
 
 Use aarons763/tiled-matmul, main tracking origin/main, and meaningful
-commits. Aaron writes RTL and tests; the mentor may write supporting docs
-and build configuration. Aaron performs installations, commits, and pushes.
+commits. Record verified milestones, design decisions, and reproducible
+validation commands alongside the implementation.
 
 ### D005 — Defer the license decision
 

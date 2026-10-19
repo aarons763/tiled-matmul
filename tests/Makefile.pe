@@ -1,0 +1,12 @@
+SIM = icarus
+TOPLEVEL_LANG = verilog
+
+VERILOG_SOURCES = ../rtl/pe.sv
+COCOTB_TOPLEVEL = pe
+COCOTB_TEST_MODULES = test_pe
+SIM_BUILD = sim_build/pe
+
+COCOTB_HDL_TIMEUNIT = 1ns
+COCOTB_HDL_TIMEPRECISION = 1ps
+
+include $(shell cocotb-config --makefiles)/Makefile.sim

@@ -1,0 +1,12 @@
+SIM = icarus
+TOPLEVEL_LANG = verilog
+ROWS ?= 4
+COLS ?= 4
+VERILOG_SOURCES = ../rtl/read_scheduler.sv
+COCOTB_TOPLEVEL = read_scheduler
+COCOTB_TEST_MODULES = test_read_scheduler
+SIM_BUILD = sim_build/scheduler_$(ROWS)x$(COLS)
+COMPILE_ARGS += -Pread_scheduler.ROWS=$(ROWS) -Pread_scheduler.COLS=$(COLS) -Pread_scheduler.DEPTH=16
+COCOTB_HDL_TIMEUNIT = 1ns
+COCOTB_HDL_TIMEPRECISION = 1ps
+include $(shell cocotb-config --makefiles)/Makefile.sim
