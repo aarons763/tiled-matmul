@@ -1,0 +1,6 @@
+# Requires the optional yosys-slang frontend; run from the repository root.
+plugin -i slang
+read_slang --top matmul_host rtl/*.sv
+synth -top matmul_host
+check -assert
+stat

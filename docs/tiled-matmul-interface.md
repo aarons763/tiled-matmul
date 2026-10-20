@@ -1,6 +1,8 @@
 # Tiled Matrix Multiplication Interface
 
-tiled_matmul connects output_tile_controller to chunked_tile_engine.
+tiled_matmul connects output_tile_controller to the selected chunk engine:
+chunked_tile_engine for DOUBLE_BUFFER=0 or double_buffered_tile_engine
+for DOUBLE_BUFFER=1. The default is 0.
 It captures total_k on an idle start acceptance edge. The output controller
 captures M and N on that same edge. Overall busy/done refer to the complete
 matrix operation, not one chunk or output tile.
@@ -10,7 +12,8 @@ matrix operation, not one chunk or output tile.
 - Pulse start while idle with nonzero m_len, n_len, and total_k.
 - M and N must fit DIM_WIDTH (default 16); 1 <= total_k <= 131071.
 - Invalid dimensions, addresses, or incomplete loads are caller errors;
-  there is no error response or hardware bounds validation yet.
+  this internal interface has no error response or hardware bounds validation.
+  matmul_host validates commands and serialized write destinations.
 - The synchronous reset must initialize the complete hierarchy before use.
   Reset aborts the operation without normal completion.
 - step freezes compute progress but not command, loading, or result
@@ -47,7 +50,9 @@ K chunks, loading delays, compute stalls, held results, latched dimensions,
 ignored busy starts, and final result acknowledgment. Tests use bounded
 waits to report missing requests/results.
 
-Broader random workloads, integrated reset/error cases, maximum sizes,
-synthesis, timing, and performance comparisons remain unverified.
+Host-level workloads and reset/error checks are listed in
+[verification](verification.md). Generic synthesis and cycle measurements
+are recorded in [results](results.md). Maximum field values are interface
+limits, not exhaustively simulated matrix sizes.
 Simulation durations above include deliberate delays and are not
 throughput measurements.

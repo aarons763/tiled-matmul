@@ -9,7 +9,7 @@ module read_scheduler #(
     input logic rst,
     input logic step,
     input logic start,
-    input logic [0:K_WIDTH-1] k_len,
+    input logic [K_WIDTH-1:0] k_len,
     output logic busy,
     output logic done,
     output logic a_rd_en [0:ROWS-1],
@@ -40,10 +40,10 @@ module read_scheduler #(
                 t <= 0;
                 busy <= 1;
             end
-            else if (busy && step && t < k_length + ROWS + COLS - 2) begin
+            else if (busy && step && 32'(t) < 32'(k_length) + ROWS + COLS - 2) begin
                 t <= t + 1;
             end
-            else if (busy && step && t == k_length + ROWS + COLS - 2) begin
+            else if (busy && step && 32'(t) == 32'(k_length) + ROWS + COLS - 2) begin
                 busy <= 0;
                 done <= 1;
             end
@@ -56,17 +56,17 @@ module read_scheduler #(
         for (int r = 0; r < ROWS; r++) begin
             a_rd_en [r] = 0;
             a_rd_addr [r] = 0;
-            if (array_step && t >= r && t-r < k_length) begin
+            if (array_step && 32'(t) >= r && 32'(t)-r < 32'(k_length)) begin
                 a_rd_en[r] = 1;
-                a_rd_addr[r] = t - r;
+                a_rd_addr[r] = ADDR_WIDTH'(32'(t) - r);
             end
         end
         for (int c = 0; c < COLS; c++) begin
             b_rd_en [c] = 0;
             b_rd_addr [c] = 0;
-            if (array_step && t >= c && t-c < k_length) begin
+            if (array_step && 32'(t) >= c && 32'(t)-c < 32'(k_length)) begin
                 b_rd_en [c] = 1;
-                b_rd_addr [c] = t-c;
+                b_rd_addr [c] = ADDR_WIDTH'(32'(t) - c);
             end
         end
     end

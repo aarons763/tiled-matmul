@@ -31,7 +31,7 @@ module chunk_controller #(
 
     // Legal operations have 1 <= total_k <= 131071 and 1 <= DEPTH <= 131071.
     // The caller pulses start while idle and loads each chunk at bank address 0.
-    assign remaining_after_chunk = k_total - k_offset - chunk_len;
+    assign remaining_after_chunk = k_total - k_offset - 17'(chunk_len);
 
     always_comb begin
         busy = (state != IDLE);
@@ -66,11 +66,11 @@ module chunk_controller #(
                     if (start) begin
                         k_total <= total_k;
                         k_offset <= 0;
-                        if (total_k > DEPTH) begin
-                            chunk_len <= DEPTH;
+                        if (32'(total_k) > DEPTH) begin
+                            chunk_len <= K_WIDTH'(DEPTH);
                         end
                         else begin
-                            chunk_len <= total_k;
+                            chunk_len <= K_WIDTH'(total_k);
                         end
                         state <= CLEAR;
                     end
@@ -97,12 +97,12 @@ module chunk_controller #(
                             done <= 1;
                         end
                         else begin
-                            k_offset <= k_offset + chunk_len;
-                            if (remaining_after_chunk > DEPTH) begin
-                                chunk_len <= DEPTH;
+                            k_offset <= k_offset + 17'(chunk_len);
+                            if (32'(remaining_after_chunk) > DEPTH) begin
+                                chunk_len <= K_WIDTH'(DEPTH);
                             end
                             else begin
-                                chunk_len <= remaining_after_chunk;
+                                chunk_len <= K_WIDTH'(remaining_after_chunk);
                             end
                             state <= LOAD;
                         end

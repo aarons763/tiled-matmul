@@ -1,15 +1,13 @@
-# Processing Element Contract (Draft)
-
-Status: proposed behavior for review; not an implementation-ready specification.
+# Processing Element Contract
 
 ## Purpose and scope
 
-This processing element (PE) is intended to be instantiated in the final
-4x4 output-stationary array. Each PE retains one output's partial sum,
+This processing element (PE) is instantiated in the parameterized
+output-stationary array. Each PE retains one output's partial sum,
 forwards A operands to the right, and forwards B operands downward.
-A smaller array may be used to verify the same reusable component.
+The same PE is used in both buffering modes.
 
-## Proposed interface
+## Interface
 
 | Signal | Direction | Meaning |
 | --- | --- | --- |
@@ -26,7 +24,7 @@ A smaller array may be used to verify the same reusable component.
 The scheduler must align operands belonging to the same shared-dimension
 index k. Valid flags indicate presence, not the identity of k.
 
-## Proposed state behavior
+## State behavior
 
 At each rising edge, apply this priority:
 
@@ -55,7 +53,7 @@ being valid.
 A MAC uses input values present immediately before its rising edge.
 Those same input values become registered forwarding outputs after that
 edge. A neighboring PE can use them at the next enabled edge.
-There is no additional product pipeline register in this proposal.
+There is no additional product pipeline register in this implementation.
 
 Without stalls, if the top-left PE processes k=0 at edge 1, input
 staggering gives MAC edge 1+i+j+k for PE row i and column j (zero-based).
@@ -66,11 +64,13 @@ The step signal must freeze the scheduler and all array state together.
 The PE has no independent ready signal or completion detector; the
 scheduler tracks progress and determines when acc is a complete result.
 
-## Decisions still required before implementation
+## Arithmetic and verification
 
-- Review and accept the control priority and clear behavior above.
-- Specify signed product width, sign extension, and accumulator overflow
-  semantics; determine a supported maximum K.
-- Establish the PE verification cases and how results will be observed.
-- Complete the surrounding accelerator specification and independent
-  mathematical reference before advancing to PE RTL.
+The product is signed 16-bit and is explicitly sign-extended to 32 bits
+before accumulation. The host limits K to 131071, keeping all supported
+signed 8-bit dot products within signed 32-bit range. Standalone callers
+must respect the accumulator range; the PE itself does not detect overflow.
+
+Run make -C tests -f Makefile.pe. Directed checks cover signed extremes,
+negative sums, valid-zero inputs, all valid combinations, clear/reset
+priority, forwarding, stalls, and resumption.

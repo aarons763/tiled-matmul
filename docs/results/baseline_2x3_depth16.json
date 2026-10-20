@@ -1,0 +1,53 @@
+[
+  {
+    "m": 4,
+    "n": 4,
+    "k": 16,
+    "rows": 2,
+    "cols": 3,
+    "depth": 16,
+    "total_cycles": 440,
+    "load": 324,
+    "result": 16,
+    "compute_control": 100,
+    "operand_writes": 320,
+    "load_completions": 4,
+    "useful_macs": 256,
+    "useful_macs_per_cycle": 0.5818181818181818,
+    "end_to_end_utilization": 0.09696969696969697
+  },
+  {
+    "m": 6,
+    "n": 5,
+    "k": 35,
+    "rows": 2,
+    "cols": 3,
+    "depth": 16,
+    "total_cycles": 1434,
+    "load": 1068,
+    "result": 30,
+    "compute_control": 336,
+    "operand_writes": 1050,
+    "load_completions": 18,
+    "useful_macs": 1050,
+    "useful_macs_per_cycle": 0.7322175732217573,
+    "end_to_end_utilization": 0.12203626220362622
+  },
+  {
+    "m": 8,
+    "n": 8,
+    "k": 32,
+    "rows": 2,
+    "cols": 3,
+    "depth": 16,
+    "total_cycles": 2572,
+    "load": 1944,
+    "result": 64,
+    "compute_control": 564,
+    "operand_writes": 1920,
+    "load_completions": 24,
+    "useful_macs": 2048,
+    "useful_macs_per_cycle": 0.7962674961119751,
+    "end_to_end_utilization": 0.13271124935199585
+  }
+]

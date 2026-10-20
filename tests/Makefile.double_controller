@@ -1,0 +1,12 @@
+SIM = icarus
+TOPLEVEL_LANG = verilog
+DEPTH ?= 16
+export TEST_DEPTH = $(DEPTH)
+VERILOG_SOURCES = ../rtl/double_buffer_controller.sv
+COCOTB_TOPLEVEL = double_buffer_controller
+COCOTB_TEST_MODULES = test_double_buffer_controller
+SIM_BUILD = sim_build/double_controller_depth$(DEPTH)
+COMPILE_ARGS += -Pdouble_buffer_controller.DEPTH=$(DEPTH)
+COCOTB_HDL_TIMEUNIT = 1ns
+COCOTB_HDL_TIMEPRECISION = 1ps
+include $(shell cocotb-config --makefiles)/Makefile.sim

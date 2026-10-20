@@ -1,0 +1,3 @@
+DOUBLE_BUFFER = 1
+include Makefile.perf
+export PERF_OUTPUT = sim_build/double_$(ROWS)x$(COLS)_depth$(DEPTH).json

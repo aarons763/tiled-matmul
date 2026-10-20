@@ -1,0 +1,6 @@
+# Generic structural synthesis only; no target library or timing claim.
+read_verilog -sv rtl/pe.sv
+hierarchy -check -top pe
+synth -top pe -noabc
+check -assert
+stat

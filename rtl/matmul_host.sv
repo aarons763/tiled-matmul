@@ -1,4 +1,5 @@
 module matmul_host #(
+    parameter int DOUBLE_BUFFER = 0,
     parameter int ROWS = 4,
     parameter int COLS = 4,
     parameter int DEPTH = 16,
@@ -43,6 +44,9 @@ module matmul_host #(
     output logic [DIM_WIDTH-1:0] result_col
 );
 
+    localparam int ROW_INDEX_WIDTH = (ROWS > 1) ? $clog2(ROWS) : 1;
+    localparam int COL_INDEX_WIDTH = (COLS > 1) ? $clog2(COLS) : 1;
+
     wire command_legal;
     wire core_start;
     wire write_accept;
@@ -62,8 +66,8 @@ module matmul_host #(
     assign core_start = cmd_valid && cmd_ready && command_legal;
 
     // One operand per accepted write. Invalid destinations are not accepted.
-    assign wr_ready = load_req && !rst && (wr_addr < chunk_len)
-        && (wr_is_b ? (wr_bank < COLS) : (wr_bank < ROWS));
+    assign wr_ready = load_req && !rst && (32'(wr_addr) < 32'(chunk_len))
+        && (wr_is_b ? (32'(wr_bank) < COLS) : (32'(wr_bank) < ROWS));
     assign write_accept = wr_valid && wr_ready;
     // Writes take priority; completion must follow the final accepted write.
     assign load_complete_ready = load_req && !rst && !wr_valid;
@@ -93,9 +97,9 @@ module matmul_host #(
         result_row = 0;
         result_col = 0;
         if (result_valid) begin
-            result_data = acc_outputs[read_row][read_col];
-            result_row = tile_row + read_row;
-            result_col = tile_col + read_col;
+            result_data = acc_outputs[ROW_INDEX_WIDTH'(read_row)][COL_INDEX_WIDTH'(read_col)];
+            result_row = tile_row + DIM_WIDTH'(read_row);
+            result_col = tile_col + DIM_WIDTH'(read_col);
         end
     end
 
@@ -129,6 +133,7 @@ module matmul_host #(
     end
 
     tiled_matmul #(
+        .DOUBLE_BUFFER (DOUBLE_BUFFER),
         .ROWS (ROWS),
         .COLS (COLS),
         .DEPTH (DEPTH),

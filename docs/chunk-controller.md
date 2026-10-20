@@ -19,7 +19,7 @@ Invalid requests are outside this module's contract.
   sourcing global K indices k_offset through k_offset + chunk_len - 1.
 - Assert load_done only in response to the current load_req and after all
   writes have completed. Deassert it before the next request. A permanently
-  high acknowledgment would incorrectly acknowledge future chunks.
+  high acknowledgment would incorrectly acknowledge subsequent chunks.
 - START asserts engine_start for one full clock. Connect chunk_len to
   tile_engine.k_len.
 - WAIT_ENGINE waits for engine_done. Completion advances the offset and
@@ -38,8 +38,8 @@ At DEPTH=16, the directed test passed at 1055 ns: K=1,16,17,32,35,
 loading/engine delays, ignored out-of-phase acknowledgments, one clear
 per operation, one-cycle start/done, and reset in every active phase.
 The maximum K request is checked only for its initial chunk, not complete
-execution. The test supplies loader and engine responses; connection to
-the real tile engine and multi-chunk mathematical results remain untested.
+execution. The standalone test supplies loader and engine responses. The integrated
+wrapper below checks real computation against the mathematical reference.
 
 ## Integrated wrapper
 
@@ -49,8 +49,8 @@ independently. The wrapper exposes overall busy/done and gates every bank
 write with load_req and not rst. The child engine's busy is not the
 operation-level busy signal. Reset must be shared through the wrapper.
 
-The testbench supplies actual operands in response to each load request;
-no RTL host loader exists yet. The integration test uses bounded waits
+The integration testbench supplies operands in response to each request.
+matmul_host provides the complete design's serialized operand-write interface. The integration test uses bounded waits
 and compares accumulated partial and final results with the mathematical
 reference. K=35 exercises offsets 0,16,32 with lengths 16,16,3; K=17 and
 K=1 run afterward without reset to check automatic accumulator clearing.
@@ -59,5 +59,5 @@ All operations include loading delays and deterministic compute stalls.
 Run make -C tests -f Makefile.chunked for 4x4 (passed at 2585 ns), or add
 ROWS=2 COLS=3 for 2x3 (passed at 2285 ns), both at depth 16.
 This covers one output tile per operation, not output-dimension tiling.
-Invalid lengths and addresses remain caller errors, and integrated reset
-during loading/computation has not yet been covered by this test.
+Invalid lengths and addresses are caller errors at this internal interface.
+Host-level reset and validation coverage is described in [verification](verification.md).

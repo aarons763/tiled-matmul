@@ -1,248 +1,132 @@
 # Tiled Matrix-Multiplication Accelerator
 
-An educational SystemVerilog project investigating how memory scheduling
-and buffering affect matrix-multiplication performance with a fixed
-number of compute units.
+A SystemVerilog accelerator computing **C[M,N] = A[M,K] × B[K,N]** with a
+parameterized output-stationary systolic array. The project compares
+single buffering and double buffering with the same compute array,
+serialized host interface, and workloads.
 
-## Current status
+On the default 4×4 array, double buffering reduces the 6×35 by 35×5
+workload from **1,422 to 1,230 cycles (13.5%)**. Generic mapped cell count
+increases from **21,576 to 23,819 (10.4%)**.
 
-The single-buffer compute core now sequences output tiles and K chunks.
-Directed full-matrix simulations pass for 4x4 and 2x3 arrays, including a
-6x35 by 35x5 workload with loading delays, compute stalls, and delayed
-result acceptance.
+The completed deliverable includes RTL, an independent mathematical
+reference, component and system tests, reproducible cycle measurements,
+strict lint, and generic synthesis. Results describe simulation cycles
+and generic logic mapping, not physical-device performance.
 
-A ready/valid host wrapper now accepts serialized operand writes and emits
-individual results with global coordinates. Directed host-interface tests
-pass for both array configurations. The external host supplies operands
-and collects the full output matrix. Broader verification, synthesis, and
-the double-buffer performance comparison remain outstanding.
+## Design
 
-## Planned direction
+- Signed 8-bit operands, signed 16-bit products, and signed 32-bit sums.
+- Default 4×4 array and 16 entries per operand bank.
+- Output tiling and K chunks support matrices larger than the array or banks.
+- Partial tiles use zero-padded input banks and emit only valid results.
+- One operand write and one result transfer per clock through ready/valid ports.
+- Synchronous reset, compute stalls, and output backpressure.
+- Optional double buffering overlaps the next K-chunk load with computation.
 
-- A 4×4 output-stationary systolic array.
-- Signed 8-bit operands and signed 32-bit accumulators.
-- Tiled execution, including rectangular matrices and partial tiles.
-- A verified single-buffer baseline followed by double buffering.
-- Performance comparisons using identical workloads.
+```mermaid
+flowchart LR
+    Host["External host"] -->|command and operand writes| Interface["matmul_host"]
+    Interface --> Control["Output-tile and chunk control"]
+    Interface --> Storage["Operand banks: one or two sets"]
+    Control -->|addresses and bank ownership| Storage
+    Storage --> Array["Systolic array: signed MACs"]
+    Array -->|completed tile| Interface
+    Interface -->|result, row, column| Host
+```
 
-These are initial goals. Dimension limits, overflow behavior, memory
-organization, and interface details will be specified before implementation.
+Set `DOUBLE_BUFFER=0` for the single-buffer baseline or `DOUBLE_BUFFER=1`
+for overlapping K chunks. The default is 0; host ports are identical.
+See the [architecture](docs/architecture.md) and
+[host protocol](docs/host-interface.md) for the complete contracts.
 
-## Development environment
+## Measured comparison
 
-Verified tool versions:
-- Ubuntu 26.04.1 LTS under WSL 2.
-- Python 3.14.4.
-- Icarus Verilog and vvp 12.0.
-- cocotb 2.1.0.
-- GNU Make 4.4.1.
-- GTKWave 3.3.126.
+Depth is 16, the array is 4×4, and the host introduces no deliberate pauses.
 
-VS Code connects through its WSL extension. Run the commands below in
-Ubuntu, not Windows PowerShell.
+| A × B dimensions | Single cycles | Double cycles | Cycle reduction |
+|---|---:|---:|---:|
+| 4×16 · 16×4 | 173 | 173 | 0.0% |
+| 6×35 · 35×5 | 1,422 | 1,230 | 13.5% |
+| 8×32 · 32×8 | 1,308 | 1,212 | 7.3% |
 
-## Setup
+A single chunk has nothing to overlap. Multi-chunk workloads benefit,
+but the one-byte-per-clock input port still limits throughput.
+The [results discussion](docs/results.md) explains the tradeoff and
+includes the rectangular-array comparison.
 
-Install the Ubuntu prerequisites:
+## Reproduce
+
+Run commands in Ubuntu/WSL from the repository root.
+
+The simulation environment uses Icarus 12.0, cocotb 2.1.0, GNU Make 4.4.1,
+and Verilator 5.032 for lint. Generic synthesis uses OSS CAD Suite
+2026-10-19, Yosys 0.70+157 (af9f71e51), with the slang frontend.
+
+For a fresh checkout, install the simulation prerequisites and create the
+isolated Python environment:
 
 ```bash
 sudo apt update
-sudo apt install git make iverilog gtkwave python3-venv libpython3-dev
-```
-
-Clone the repository into your Linux home directory:
-
-```bash
-mkdir -p ~/projects
-cd ~/projects
-git clone https://github.com/aarons763/tiled-matmul.git
-cd tiled-matmul
-```
-
-Create an isolated Python environment and install the test dependency:
-
-```bash
+sudo apt install git make iverilog verilator python3-venv libpython3-dev
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-Ubuntu package versions depend on the distribution and repository state.
-The versions above describe the tested setup; the setup commands do not
-pin system packages.
+See [synthesis setup](docs/synthesis-setup.md) for the separately installed
+tool bundle. Package versions depend on the distribution; the versions
+above identify the measured environment.
 
-## Run the smoke test
+Run the complete regression:
 
-From the project root:
+```bash
+bash scripts/regression.sh
+```
+
+It activates the project virtual environment, runs lint and simulations
+sequentially, verifies the saved performance snapshots, and synthesizes
+both modes. It stops on any failure and saves logs and test-result XML
+under `tests/sim_build/regression/`.
+
+By default it uses `~/tools/cad-20261019/oss-cad-suite/environment`.
+Set `OSS_CAD_ENV` to use a different installation location. The suite is
+activated only inside synthesis subprocesses, preserving the simulation tools.
+
+Individual commands are also available:
 
 ```bash
 source .venv/bin/activate
-make -C tests
-```
-
-Expected result: one passing test, zero failures, and 25 ns of simulated time.
-
-Generated files appear under `tests/` and are excluded from Git.
-The `.venv` directory is also excluded.
-
-## Files
-
-- `rtl/smoke_reg.sv`: 8-bit register used to check the simulation setup.
-- `tests/test_smoke_reg.py`: directed cocotb test.
-- `tests/Makefile`: simulation configuration.
-- `requirements.txt`: selected cocotb version.
-- `docs/progress.md`: development history and verified milestones.
-
-## Limitations
-
-The passing smoke test establishes basic simulator/testbench integration.
-There are no accelerator performance, synthesis, timing, area, or power
-results yet. A fresh GitHub checkout with a newly created Python virtual environment passed the smoke test at 25 ns. This check reused the installed Ubuntu system tools; it was not a clean-machine test.
-
-## Run the PE test
-
-From the project root, with the virtual environment active:
-
-```bash
-make -C tests -f Makefile.pe
-```
-
-The PE uses a separate build directory, `tests/sim_build/pe/`.
-The original `make -C tests` command continues to run the register smoke test.
-The expanded PE directed test passed at 205 ns (1 passed, 0 failed).
-It covers signed operand boundaries, valid and invalid pairs, clear priority,
-reset during a stall, three-edge state retention, and resumption.
-This is directed component coverage, not exhaustive PE verification.
-Three stall assertion messages still need their expected-value text aligned
-with the correct assertions; this does not affect the passing checks.
-
-## Array simulations
-
-With the virtual environment active, run the 2x2 directed test:
-
-```bash
-make -C tests -f Makefile.array
-```
-
-Run the current 4x4 reference-based test:
-
-```bash
-make -C tests -f Makefile.array4
-```
-
-The directed test passed at 105 ns; the 4x4 reference test passed at
-95 ns. The reference test currently contains a 4x3 by 3x4 workload and
-must use the 4x4 configuration. Build directories are separate.
-The full accelerator, memory subsystem, and controller are not implemented.
-
-## Operand storage simulations
-
-With the virtual environment active:
-
-```bash
-make -C tests -f Makefile.bank
-make -C tests -f Makefile.buffer
-```
-
-The bank directed test passed at 155 ns. The operand-buffer test passed at
-115 ns with four A banks, four B banks, and 16 entries per bank.
-These commands test the storage components in isolation. The integrated
-buffered array is tested separately below; scheduler RTL remains outstanding.
-
-## Buffered array integration
-
-```bash
-make -C tests -f Makefile.buffered
-```
-
-The 4x4 buffered-array test passed at 335 ns. It checks a K=3 workload
-against the mathematical reference, synchronous read latency, stalls,
-result retention, and recomputation after clear using retained operands.
-Read requests are still driven by the testbench; there is no hardware
-scheduler or complete tiled accelerator yet.
-
-## Read scheduler simulation
-
-```bash
-make -C tests -f Makefile.scheduler
-make -C tests -f Makefile.scheduler ROWS=2 COLS=3
-```
-
-Directed tests passed for 4x4 (775 ns) and 2x3 (655 ns) with bank depth 16.
-They check K=1, 3, and 16, read requests, stalls, start handling, completion,
-and reset/restart. The scheduler is tested separately from the datapath.
-
-## Tile engine simulation
-
-```bash
-make -C tests -f Makefile.tile
-make -C tests -f Makefile.tile ROWS=2 COLS=3
-```
-
-The tile engine connects the scheduler to buffered computation. Directed
-K=3 tests passed at 555 ns (4x4) and 465 ns (2x3), including stalls,
-accumulation across repeated runs, clear priority, and busy write blocking.
-Inputs must obey the legal-K and loaded-address contract. Higher-level
-tiling and host control are not implemented.
-
-## Chunk controller simulation
-
-```bash
-make -C tests -f Makefile.chunk
-```
-
-The standalone chunk-controller test passed at 1055 ns. It checks full
-and partial chunks and delayed loader/engine responses. See
-[the chunk-controller contract](docs/chunk-controller.md) for handshake
-rules and the limits of the current verification.
-
-## Multi-chunk tile engine
-
-```bash
-make -C tests -f Makefile.chunked
-make -C tests -f Makefile.chunked ROWS=2 COLS=3
-```
-
-Directed K=35,17,1 workloads passed against the mathematical reference with
-depth-16 banks: 2585 ns for 4x4 and 2285 ns for 2x3. The testbench loads
-operands on request and introduces loading delays and compute stalls.
-This computes one output tile across K chunks; larger output matrices
-still require output-tile sequencing.
-
-## Output tile sequencing
-
-```bash
-make -C tests -f Makefile.output_tile
-make -C tests -f Makefile.output_tile ROWS=2 COLS=3
-make -C tests -f Makefile.output_tile DIM_WIDTH=4
-```
-
-All three directed controller tests passed. The four-bit dimension build
-checks a 15x15 output near the coordinate limit. See
-[the output-tile protocol](docs/output-tile-controller.md) for result
-acceptance and partial-tile rules. Compute-engine integration is pending.
-
-## Full matrix simulation
-
-```bash
-make -C tests -f Makefile.matmul
-make -C tests -f Makefile.matmul ROWS=2 COLS=3
-```
-
-Both directed tests pass. See [the top-level interface contract](docs/tiled-matmul-interface.md)
-for loading, partial-tile padding, result acceptance, and current limitations.
-
-## Host interface simulation
-
-```bash
 make -C tests -f Makefile.host
-make -C tests -f Makefile.host ROWS=2 COLS=3
+make -C tests -f Makefile.double
+make -C tests -f Makefile.perf
+make -C tests -f Makefile.perf_double
 ```
 
-Both directed tests pass: 17055 ns for 4x4 and 17735 ns for 2x3.
-See [the host interface contract](docs/host-interface.md) for commands,
-operand writes, loading completion, result streaming, and reset behavior.
+## Verification and scope
 
-The expanded seven-workload host regression also passes with 2x3 arrays
-and bank depths 1 and 3. See [expanded verification results](docs/host-interface.md#expanded-host-regression)
-for current coverage, simulation times, and the Icarus 1x1 build limitation.
+System tests cover 4×4/depth16 and 2×3/depth16, depth1, and depth3.
+Checks include signed extremes, partial tiles, multi-chunk sums, invalid
+commands and writes, stalls, result stability, reset/recovery, and both
+orders of load/compute completion. All measured outputs are checked
+against the independent reference.
+
+Both modes pass strict lint and generic synthesis structural checks.
+Operand memories are mapped to registers and logic in the recorded flow.
+No FPGA resource, physical area, power, or maximum-frequency measurement
+is claimed. The Icarus 1×1-array build hits an elaboration assertion and
+is outside the verified configurations; a 1×1 matrix on a larger array is tested.
+
+## Repository guide
+
+| Location | Contents |
+|---|---|
+| `rtl/` | Processing elements, banks, controllers, and host wrapper |
+| `tests/` | cocotb tests, independent reference, and simulation Makefiles |
+| `scripts/` | Regression, lint, and synthesis entry points |
+| [Architecture](docs/architecture.md) | Dataflow, module organization, and arithmetic |
+| [Results](docs/results.md) | Performance and generic hardware comparison |
+| [Verification](docs/verification.md) | Coverage and regression behavior |
+| [Host interface](docs/host-interface.md) | Commands, loading, results, and reset |
+| [Double buffering](docs/double-buffering.md) | Ownership, overlap, and measurement details |
+| `docs/results/` | Recorded JSON measurements and synthesis reports |

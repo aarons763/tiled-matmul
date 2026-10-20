@@ -17,7 +17,7 @@ module pe (
     logic signed [15:0] intermediate_product;
     logic signed [31:0] extended_product;
     assign intermediate_product = a_in * b_in;
-    assign extended_product = intermediate_product;
+    assign extended_product = {{16{intermediate_product[15]}}, intermediate_product};
 
     always_ff @(posedge clk) begin
         if (rst) begin

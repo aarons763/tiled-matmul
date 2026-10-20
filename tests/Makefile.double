@@ -1,0 +1,3 @@
+DOUBLE_BUFFER = 1
+include Makefile.host
+COCOTB_TEST_MODULES = test_matmul_host,test_double_overlap

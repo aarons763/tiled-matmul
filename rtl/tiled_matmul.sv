@@ -1,4 +1,5 @@
 module tiled_matmul #(
+    parameter int DOUBLE_BUFFER = 0,
     parameter int ROWS = 4,
     parameter int COLS = 4,
     parameter int DEPTH = 16,
@@ -39,6 +40,8 @@ module tiled_matmul #(
     logic [16:0] k_total;
     wire engine_start;
     wire engine_done;
+    // Completion drives the parent controller; child busy is not needed.
+    wire unused_engine_busy;
 
     // All output tiles use the K length accepted with the matrix command.
     always_ff @(posedge clk) begin
@@ -74,31 +77,63 @@ module tiled_matmul #(
         .result_valid (result_valid)
     );
 
-    chunked_tile_engine #(
-        .ROWS (ROWS),
-        .COLS (COLS),
-        .DEPTH (DEPTH),
-        .ADDR_WIDTH (ADDR_WIDTH),
-        .K_WIDTH (K_WIDTH)
-    ) chunked_tile_engine_inst (
-        .clk (clk),
-        .rst (rst),
-        .step (step),
-        .start (engine_start),
-        .total_k (k_total),
-        .load_done (load_done),
-        .a_wr_en (a_wr_en),
-        .b_wr_en (b_wr_en),
-        .a_wr_addr (a_wr_addr),
-        .b_wr_addr (b_wr_addr),
-        .a_wr_data (a_wr_data),
-        .b_wr_data (b_wr_data),
-        .busy (),
-        .done (engine_done),
-        .load_req (load_req),
-        .k_offset (k_offset),
-        .chunk_len (chunk_len),
-        .acc_outputs (acc_outputs)
-    );
+    generate
+        if (DOUBLE_BUFFER != 0) begin : double_buffered
+            double_buffered_tile_engine #(
+                .ROWS (ROWS),
+                .COLS (COLS),
+                .DEPTH (DEPTH),
+                .ADDR_WIDTH (ADDR_WIDTH),
+                .K_WIDTH (K_WIDTH)
+            ) engine_inst (
+                .clk (clk),
+                .rst (rst),
+                .step (step),
+                .start (engine_start),
+                .total_k (k_total),
+                .load_done (load_done),
+                .a_wr_en (a_wr_en),
+                .b_wr_en (b_wr_en),
+                .a_wr_addr (a_wr_addr),
+                .b_wr_addr (b_wr_addr),
+                .a_wr_data (a_wr_data),
+                .b_wr_data (b_wr_data),
+                .busy (unused_engine_busy),
+                .done (engine_done),
+                .load_req (load_req),
+                .k_offset (k_offset),
+                .chunk_len (chunk_len),
+                .acc_outputs (acc_outputs)
+            );
+        end
+        else begin : single_buffered
+            chunked_tile_engine #(
+                .ROWS (ROWS),
+                .COLS (COLS),
+                .DEPTH (DEPTH),
+                .ADDR_WIDTH (ADDR_WIDTH),
+                .K_WIDTH (K_WIDTH)
+            ) chunked_tile_engine_inst (
+                .clk (clk),
+                .rst (rst),
+                .step (step),
+                .start (engine_start),
+                .total_k (k_total),
+                .load_done (load_done),
+                .a_wr_en (a_wr_en),
+                .b_wr_en (b_wr_en),
+                .a_wr_addr (a_wr_addr),
+                .b_wr_addr (b_wr_addr),
+                .a_wr_data (a_wr_data),
+                .b_wr_data (b_wr_data),
+                .busy (unused_engine_busy),
+                .done (engine_done),
+                .load_req (load_req),
+                .k_offset (k_offset),
+                .chunk_len (chunk_len),
+                .acc_outputs (acc_outputs)
+            );
+        end
+    endgenerate
 
 endmodule

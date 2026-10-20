@@ -28,6 +28,8 @@ module chunked_tile_engine #(
     wire engine_start;
     wire engine_clear;
     wire engine_done;
+    // Completion drives the parent controller; child busy is not needed.
+    wire unused_engine_busy;
     wire a_wr_en_gated [0:ROWS-1], b_wr_en_gated [0:COLS-1];
 
     genvar i, j;
@@ -78,7 +80,7 @@ module chunked_tile_engine #(
         .b_wr_addr (b_wr_addr),
         .a_wr_data (a_wr_data),
         .b_wr_data (b_wr_data),
-        .busy (),
+        .busy (unused_engine_busy),
         .done (engine_done),
         .acc_outputs (acc_outputs)
     );

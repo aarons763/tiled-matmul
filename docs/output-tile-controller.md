@@ -37,5 +37,6 @@ tile builds each passed at 1195 ns. DIM_WIDTH=4 additionally traversed a
 Tests cover exact and partial tiles, single rows/columns, engine delays,
 delayed result acceptance, early ready, latched dimensions, one-clock
 commands/completion, and reset in all active phases.
-Engine completion is supplied by the testbench. Full matrix multiplication
-through the real chunked engine is not yet integrated.
+This standalone test supplies engine completion. tiled_matmul integrates
+the real chunked engine; full-system checks are described in
+[verification](verification.md).

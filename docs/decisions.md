@@ -1,48 +1,54 @@
-# Design and Workflow Decisions
+# Design decisions
 
-## Accepted workflow decisions
+## Arithmetic and compute organization
 
-### D001 — Use Ubuntu under WSL 2
+The design uses signed 8-bit operands and signed 32-bit accumulated results.
+One output-stationary PE array retains a tile's partial sums across K chunks.
+The default array is 4x4; the same parameterized RTL is tested at 2x3.
+The host accepts nonzero 16-bit M/N dimensions and nonzero 17-bit K.
 
-Use Linux development tools with VS Code connected through WSL. Keep the
-project in /home/aarons763/projects/tiled-matmul. Native Windows Icarus
-setup was troublesome; the existing Ubuntu environment already contained
-Icarus, Make, Git, and GTKWave.
+## Operand memory
 
-### D002 — Isolate Python dependencies
+Each array row has an A bank and each column has a B bank, with synchronous
+registered reads. DEPTH defaults to 16. Each chunk starts at local address
+zero. Inactive edge banks are filled with zero, and only the active output
+region is returned.
 
-Use the ignored project .venv and pin cocotb 2.1.0 in requirements.txt.
-This isolates Python packages from Ubuntu's system Python. A fresh virtual
-environment installed the requirements and passed the smoke test.
+DOUBLE_BUFFER=0 uses one operand set; DOUBLE_BUFFER=1 uses two sets with
+exclusive read/write ownership during overlap. Both modes use one scheduler
+and one compute array. The buffers overlap K chunks within an output tile.
 
-### D003 — Begin with Icarus and cocotb
+## Host and control
 
-Use Icarus 12.0 and cocotb 2.1.0 for initial simulation, with a small Makefile
-and explicit 1 ns / 1 ps simulation defaults. This combination passed the
-register smoke test. Future RTL constructs must be checked for simulator
-support; passing this test does not establish full SystemVerilog support.
+The custom synchronous host protocol serializes operands and results.
+One accepted write carries one signed byte. Results carry signed 32-bit
+data and global coordinates. Command dimensions are captured on acceptance.
+The host owns full-matrix storage and supplies every requested chunk.
 
-### D004 — Track development evidence in version control
+Reset is active-high and synchronous. step freezes computation but not
+loading or result handshakes. A tile's accumulators remain stable during
+result backpressure. Reset invalidates buffer ownership and aborts completion.
 
-Use aarons763/tiled-matmul, main tracking origin/main, and meaningful
-commits. Record verified milestones, design decisions, and reproducible
-validation commands alongside the implementation.
+## Evaluation
 
-### D005 — Defer the license decision
+The experiment holds workload and host bandwidth constant. The primary
+performance metric is accepted-command-to-final-result cycle count, with
+the command-acceptance edge excluded. Separate counters describe loading,
+result transfers, and overlap. Generic synthesis uses the same tool bundle
+and mapping flow for both implementations.
 
-On 2026-10-13 Aaron chose to defer selecting a repository license.
-No LICENSE file is added. This decision does not block continued development.
+Generic memory mapping uses registers and logic. No physical target, clock
+constraint, place-and-route, device resource, power, or maximum-frequency
+claim is part of the measured results.
 
-## Open architecture decisions
+## Reproducibility
 
-- Supported matrix dimensions and local-memory capacity.
-- Maximum K, signed arithmetic details, and overflow policy.
-- Host protocol, reset behavior, errors, and output ordering.
-- Memory layout, parallel access organization, and read latency.
-- Exact PE/register schedule, stalls, tiling, and buffer ownership.
-- Synthesis target, timing constraints, and later implementation flow.
+Simulation uses Ubuntu/WSL, Icarus 12.0, cocotb 2.1.0, and a project virtual
+environment. Lint uses Verilator 5.032. Full-host synthesis uses OSS CAD
+Suite 2026-10-19, Yosys 0.70+157 (af9f71e51), and slang.
+The regression saves logs and requires exact performance-snapshot matches.
 
-The 4x4 output-stationary array, 8-bit operands, 32-bit accumulators, and
-single-buffer-to-double-buffer comparison are planned directions, not yet
-a completed architectural specification.
+## Repository licensing
 
+No repository license file is supplied. The previously deferred license
+decision is unchanged.

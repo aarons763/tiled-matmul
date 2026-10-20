@@ -28,6 +28,7 @@ valid_rows and valid_cols identify its active region, and k_offset and
 chunk_len identify the requested slice of the reduction dimension.
 
 For each local address q from 0 through chunk_len-1, write:
+
 - A bank r: A[tile_row+r][k_offset+q], or zero if r >= valid_rows.
 - B bank c: B[k_offset+q][tile_col+c], or zero if c >= valid_cols.
 
@@ -80,19 +81,14 @@ make -C tests -f Makefile.host
 make -C tests -f Makefile.host ROWS=2 COLS=3
 ```
 
-Directed tests passed: 4x4 at 17055 ns and 2x3 at 17735 ns, one test each.
-They compare a 6x35 by 35x5 product and a subsequent 1x1 product against
-the reference, checking partial tiles, chunk loading, compute stalls,
-result backpressure, command rejection, invalid write destinations,
-write/completion priority, and reset during loading.
-
-These tests are not exhaustive verification or synthesis/performance
-measurements. The interface is a custom synchronous protocol, not AXI,
-PCIe, or a software driver.
+The host interface is a custom synchronous protocol, not AXI, PCIe, or a
+software driver. The sections below describe the current directed and
+seeded checks; complete regression coverage is in
+[verification](verification.md).
 
 ## Expanded host regression
 
-The host test now runs seven workloads per configuration with reproducible
+The host test runs seven workloads per configuration with reproducible
 seed 763 for signed operands, loading gaps, compute stalls, and result
 backpressure. Cases cover all -128 operands, mixed -128/127 operands, zero
 products, rectangular outputs, and K at DEPTH-1 (clamped to 1), DEPTH,
@@ -115,12 +111,12 @@ make -C tests -f Makefile.host ROWS=2 COLS=3 DEPTH=3
 
 A 1x1 array with DEPTH=1 was attempted but Icarus 12.0 aborted during
 elaboration at tile_engine.sv:52 with an internal unpacked-dimension
-assertion. No simulation ran for that configuration; it remains unverified.
+assertion. That configuration is excluded from the verified set.
 Depth-one storage passed separately on the 2x3 array.
 
 These times describe testbench simulation duration, not accelerator
-throughput. Additional seeds, synthesis, and timing remain follow-up work.
-Reset coverage is recorded below.
+throughput. Generic synthesis and cycle measurements are documented in
+[results](results.md). Reset coverage is recorded below.
 
 ## Reset and recovery verification
 
@@ -132,11 +128,21 @@ or output, then a complete operation with different operands to detect stale
 accumulation. This is directed coverage, not every possible reset edge.
 
 Both host tests pass in all four configurations:
+
 - 4x4, depth 16: 70970 ns total (1385 ns reset/recovery test).
 - 2x3, depth 16: 56510 ns total (975 ns reset/recovery test).
 - 2x3, depth 1: 53770 ns total (975 ns reset/recovery test).
 - 2x3, depth 3: 41850 ns total (975 ns reset/recovery test).
 
-No RTL changes were required. The 1x1 Icarus elaboration limitation remains.
-Next work is synthesis/lint preparation and baseline cycle measurements,
-followed by double buffering and comparison on identical workloads.
+The 1x1 Icarus elaboration limitation excludes that array configuration
+from the verified set.
+
+## Optional double-buffer mode
+
+DOUBLE_BUFFER=0 preserves the baseline. DOUBLE_BUFFER=1 overlaps loading
+the next K chunk with the current chunk's computation, using the same ports.
+load_req metadata describes the loader's chunk; computation may still be
+using the preceding chunk. Keep step enabled to benefit from overlap.
+Result ordering, write validation, completion priority, and reset behavior
+are unchanged. See [double buffering](double-buffering.md) for ownership,
+coverage, measurements, and limitations.

@@ -11,6 +11,7 @@ async def test_matmul_host(dut):
     rows = int(os.environ["TEST_ROWS"])
     cols = int(os.environ["TEST_COLS"])
     depth = int(os.environ["TEST_DEPTH"])
+    double_buffer = int(os.environ.get("TEST_DOUBLE_BUFFER", "0"))
     rng = random.Random(763)
     dut._log.info("Reproducible operand and stall seed: 763")
     dut.clk.value = 0
@@ -148,7 +149,7 @@ async def test_matmul_host(dut):
                                 await ReadOnly()
                                 assert dut.load_req.value == 1 and dut.done.value == 0
                             await FallingEdge(dut.clk)
-                            dut.step.value = 0
+                            dut.step.value = int(rng.randrange(4) != 0) if double_buffer else 0
                             dut.cmd_valid.value = 0
                             dut.wr_valid.value = 1
                             dut.wr_is_b.value = is_b

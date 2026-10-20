@@ -36,8 +36,8 @@ module output_tile_controller #(
     // Positive dimensions and positive tile sizes are caller requirements.
     // ROWS and COLS must each fit within DIM_WIDTH bits.
     // The extra bit prevents tile-boundary addition from wrapping.
-    assign next_row = {1'b0, tile_row} + ROWS;
-    assign next_col = {1'b0, tile_col} + COLS;
+    assign next_row = {1'b0, tile_row} + (DIM_WIDTH+1)'(ROWS);
+    assign next_col = {1'b0, tile_col} + (DIM_WIDTH+1)'(COLS);
 
     always_comb begin
         busy = (state != IDLE);
@@ -47,18 +47,18 @@ module output_tile_controller #(
         valid_cols = 0;
 
         if (!rst && state != IDLE) begin
-            if (m_total - tile_row > ROWS) begin
-                valid_rows = ROWS;
+            if (m_total - tile_row > DIM_WIDTH'(ROWS)) begin
+                valid_rows = ROW_COUNT_WIDTH'(ROWS);
             end
             else begin
-                valid_rows = m_total - tile_row;
+                valid_rows = ROW_COUNT_WIDTH'(m_total - tile_row);
             end
 
-            if (n_total - tile_col > COLS) begin
-                valid_cols = COLS;
+            if (n_total - tile_col > DIM_WIDTH'(COLS)) begin
+                valid_cols = COL_COUNT_WIDTH'(COLS);
             end
             else begin
-                valid_cols = n_total - tile_col;
+                valid_cols = COL_COUNT_WIDTH'(n_total - tile_col);
             end
 
             case (state)
